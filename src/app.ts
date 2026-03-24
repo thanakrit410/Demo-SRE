@@ -7,7 +7,7 @@ import bodyParser from 'body-parser';
 
 
 
-const port = process.env.PORT || 3000;
+const port = Number(process.env.PORT) || 3000;
 dotenv.config({ path: process.env.NODE_ENV ? `.env.${process.env.NODE_ENV}` : `.env` });
 
 
@@ -44,12 +44,24 @@ app.use(express.json());
 app.use('/health',healthRoute)
 
  
-
-
 app.get('/', (req: Request, res: Response) => {
   res.json({
     message: 'Hello Express + TypeScirpt!!',
   })
 });
 
-app.listen(port, () => console.log(`Application is running on port ${port}`))
+const server = app.listen(port, '0.0.0.0', () => {
+  console.log(`Application is running on port ${port}`);
+});
+
+const shutdown = () => {
+  console.log('Shutting down...');
+
+  server.close(() => {
+    console.log('Server closed');
+    process.exit(0);
+  });
+};
+
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);
