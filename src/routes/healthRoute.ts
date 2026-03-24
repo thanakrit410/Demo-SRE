@@ -4,7 +4,7 @@ import { getHealthCheck } from '../controllers/healthController';
 const router = express.Router();
 
 
-router.get('/', getHealthCheck);
+router.get('/health', getHealthCheck);
 
 
 export default router;
