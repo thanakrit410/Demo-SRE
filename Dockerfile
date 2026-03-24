@@ -3,13 +3,13 @@ FROM node:24-alpine AS builder
 
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm install --include=dev
-
+COPY package.json ./
 COPY tsconfig.json ./
 COPY ./src ./src
 
-RUN npm run build
+RUN npm install --include=dev
+
+RUN npm run build && ls -R dist 
 
 # Stage 2: Production image
 FROM node:24-alpine
@@ -20,8 +20,8 @@ RUN apk add --no-cache tini wget
 
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/dist ./dist   
+COPY --from=builder /app/package.json ./
 
 RUN npm install --omit=dev
 
@@ -39,4 +39,4 @@ HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
 # Graceful shutdown
 ENTRYPOINT ["/sbin/tini", "--"]
 
-CMD ["node", "dist/index.js"]
+CMD ["node", "./dist/app.js"]
