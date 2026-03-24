@@ -1,0 +1,30 @@
+{
+  "family": "demo-api-task",
+  "networkMode": "awsvpc",
+  "containerDefinitions": [
+    {
+      "name": "demo-container",
+      "image": "IMAGE_PLACEHOLDER",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 3000,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "NODE_ENV",
+          "value": "production"
+        }
+      ]
+    }
+  ],
+  "requiresCompatibilities": [
+    "FARGATE"
+  ],
+  "cpu": "1024",        
+  "memory": "3072",     
+  "executionRoleArn": "arn:aws:iam::525382241012:role/ecsTaskExecutionRole",
+  "volumes": []
+}
