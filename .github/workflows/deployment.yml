@@ -18,8 +18,7 @@ jobs:
         id: build
         run: |
           IMAGE_TAG=${GITHUB_SHA::8}
-          docker build -t my-app:$IMAGE_TAG .
-
+          docker build --no-cache -t ${{ secrets.ECR_REPOSITORY }}:$IMAGE_TAG .
           echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
 
   push:
@@ -36,16 +35,16 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Login to ECR
+      - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Tag & Push
+      - name: Tag Docker image
         id: push
         run: |
           IMAGE_TAG=${{ needs.build.outputs.image_tag }}
           IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:$IMAGE_TAG
 
-          docker tag my-app:$IMAGE_TAG $IMAGE_URI
+          docker tag ${{ secrets.ECR_REPOSITORY }}:$IMAGE_TAG $IMAGE_URI
           docker push $IMAGE_URI
 
           echo "image_uri=$IMAGE_URI" >> $GITHUB_OUTPUT
