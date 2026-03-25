@@ -24,8 +24,6 @@ jobs:
   push:
     runs-on: self-hosted
     needs: build
-    outputs:
-      image_uri: ${{ steps.push.outputs.image_uri }}
 
     steps:
       - name: Checkout code
@@ -42,33 +40,26 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Tag & Push Docker image
-        id: push
         run: |
           IMAGE_TAG=${{ needs.build.outputs.image_tag }}
           IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:$IMAGE_TAG
 
-          echo "Using IMAGE_URI=$IMAGE_URI"
-
           docker tag ${{ secrets.ECR_REPOSITORY }}:$IMAGE_TAG $IMAGE_URI
           docker push $IMAGE_URI
 
-          
-          ENCODED_IMAGE_URI=$(echo $IMAGE_URI | base64)
-
-          echo "image_uri=$ENCODED_IMAGE_URI" >> $GITHUB_OUTPUT
-
   deploy:
     runs-on: self-hosted
-    needs: push
+    needs: build   # ✅ ใช้ build แทน push
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Decode image URI
-        id: decode
+      - name: Set IMAGE_URI   # 🔥 key fix อยู่ตรงนี้
         run: |
-          IMAGE_URI=$(echo "${{ needs.push.outputs.image_uri }}" | base64 -d)
+          IMAGE_TAG=${{ needs.build.outputs.image_tag }}
+          IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:$IMAGE_TAG
+
           echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
 
       - name: Debug image uri
