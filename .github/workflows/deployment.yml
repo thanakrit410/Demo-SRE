@@ -28,6 +28,9 @@ jobs:
       image_uri: ${{ steps.push.outputs.image_uri }}
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -38,16 +41,21 @@ jobs:
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Tag Docker image
+      - name: Tag & Push Docker image
         id: push
         run: |
           IMAGE_TAG=${{ needs.build.outputs.image_tag }}
           IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:$IMAGE_TAG
 
+          echo "Using IMAGE_URI=$IMAGE_URI"
+
           docker tag ${{ secrets.ECR_REPOSITORY }}:$IMAGE_TAG $IMAGE_URI
           docker push $IMAGE_URI
 
-          echo "image_uri=$IMAGE_URI" >> $GITHUB_OUTPUT
+          
+          ENCODED_IMAGE_URI=$(echo $IMAGE_URI | base64)
+
+          echo "image_uri=$ENCODED_IMAGE_URI" >> $GITHUB_OUTPUT
 
   deploy:
     runs-on: self-hosted
@@ -56,6 +64,15 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Decode image URI
+        id: decode
+        run: |
+          IMAGE_URI=$(echo "${{ needs.push.outputs.image_uri }}" | base64 -d)
+          echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
+
+      - name: Debug image uri
+        run: echo "IMAGE = $IMAGE_URI"
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -70,7 +87,7 @@ jobs:
         with:
           task-definition: ./task-definition.json
           container-name: ${{ secrets.CONTAINER_NAME }}
-          image: ${{ needs.push.outputs.image_uri }}
+          image: ${{ env.IMAGE_URI }}
 
       - name: Deploy to ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
