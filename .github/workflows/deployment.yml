@@ -49,8 +49,7 @@ jobs:
 
   deploy:
     runs-on: self-hosted
-    needs: build   # ✅ ใช้ build แทน push
-
+    needs: push   
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
