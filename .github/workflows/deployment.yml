@@ -1,5 +1,9 @@
 name: Deploy Node.js App to ECS
 
+permissions:
+  contents: read
+  security-events: write
+
 on:
   push:
     branches: [ main ]
@@ -23,7 +27,7 @@ jobs:
 
   sast:
     runs-on: self-hosted
-    needs: build   # ✅ เปลี่ยนตรงนี้
+    needs: build
 
     steps:
       - name: Checkout code
@@ -33,13 +37,18 @@ jobs:
         uses: github/codeql-action/init@v3
         with:
           languages: javascript
+          ram: 2048
+          threads: 2
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
 
       - name: Run CodeQL Analysis
         uses: github/codeql-action/analyze@v3
 
   push:
     runs-on: self-hosted
-    needs: sast   # ✅ ให้ผ่าน SAST ก่อน push
+    needs: sast
 
     steps:
       - name: Checkout code
@@ -65,7 +74,7 @@ jobs:
 
   deploy:
     runs-on: self-hosted
-    needs: push   
+    needs: push
 
     steps:
       - name: Checkout code
@@ -75,7 +84,6 @@ jobs:
         run: |
           IMAGE_TAG=${{ needs.build.outputs.image_tag }}
           IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:$IMAGE_TAG
-
           echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
 
       - name: Debug image uri
@@ -118,5 +126,5 @@ jobs:
       - name: Upload DAST Report
         uses: actions/upload-artifact@v4
         with:
-          name: dast-report 
+          name: dast-report
           path: zap-report.html
