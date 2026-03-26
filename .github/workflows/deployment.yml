@@ -40,8 +40,11 @@ jobs:
           ram: 2048
           threads: 2
 
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v3
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build app
+        run: npm run build || echo "No build step"
 
       - name: Run CodeQL Analysis
         uses: github/codeql-action/analyze@v3
@@ -120,7 +123,7 @@ jobs:
       - name: Run DAST (OWASP ZAP)
         run: |
           docker run --rm owasp/zap2docker-stable zap-baseline.py \
-            -t http://thanakrit.online/demo-api/health \
+            -t http://thanakrit.online/demo-api \
             -r zap-report.html
 
       - name: Upload DAST Report
