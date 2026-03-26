@@ -74,7 +74,7 @@ jobs:
 
       - name: Tag & Push Docker image
         run: |
-          IMAGE_TAG=${{ needs.build.outputs.image_tag }}
+          IMAGE_TAG=${GITHUB_SHA::8}
           IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:$IMAGE_TAG
 
           docker tag ${{ secrets.ECR_REPOSITORY }}:$IMAGE_TAG $IMAGE_URI
@@ -90,7 +90,7 @@ jobs:
 
       - name: Set IMAGE_URI
         run: |
-          IMAGE_TAG=${{ needs.build.outputs.image_tag }}
+          IMAGE_TAG=${GITHUB_SHA::8}
           IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:$IMAGE_TAG
           echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
 
