@@ -21,9 +21,25 @@ jobs:
           docker build --no-cache -t ${{ secrets.ECR_REPOSITORY }}:$IMAGE_TAG .
           echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
 
+  sast:
+    runs-on: self-hosted
+    needs: build   # ✅ เปลี่ยนตรงนี้
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript
+
+      - name: Run CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
   push:
     runs-on: self-hosted
-    needs: build
+    needs: sast   # ✅ ให้ผ่าน SAST ก่อน push
 
     steps:
       - name: Checkout code
@@ -50,13 +66,14 @@ jobs:
   deploy:
     runs-on: self-hosted
     needs: push   
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set IMAGE_URI
         run: |
-          IMAGE_TAG=${GITHUB_SHA::8}
+          IMAGE_TAG=${{ needs.build.outputs.image_tag }}
           IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:$IMAGE_TAG
 
           echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
@@ -86,3 +103,20 @@ jobs:
           service: ${{ secrets.ECS_SERVICE }}
           cluster: ${{ secrets.ECS_CLUSTER }}
           wait-for-service-stability: true
+
+  dast:
+    runs-on: self-hosted
+    needs: deploy
+
+    steps:
+      - name: Run DAST (OWASP ZAP)
+        run: |
+          docker run --rm owasp/zap2docker-stable zap-baseline.py \
+            -t http://thanakrit.online/demo-api/health \
+            -r zap-report.html
+
+      - name: Upload DAST Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: dast-report 
+          path: zap-report.html
