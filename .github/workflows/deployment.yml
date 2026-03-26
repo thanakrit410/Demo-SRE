@@ -127,7 +127,7 @@ jobs:
     steps:
       - name: Run DAST (OWASP ZAP)
         run: |
-          docker run --rm owasp/zap2docker-stable zap-baseline.py \
+          docker run --rm ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
             -t http://thanakrit.online/demo-api \
             -r zap-report.html
 
